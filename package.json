@@ -1,9 +1,0 @@
-{
-  "name": "mpd-mp4-converter",
-  "version": "1.0.0",
-  "private": true,
-  "description": "MPD to MP4 converter with DRM detection",
-  "main": "server.js",
-  "scripts": {"start": "node server.js"},
-  "dependencies": {"express": "^5.1.0"}
-}
