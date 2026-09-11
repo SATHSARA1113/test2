@@ -1,0 +1,8 @@
+{
+  "name": "mpd-safe-converter",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Vercel-compatible MPD inspector with safe DRM detection",
+  "scripts": {"dev": "npx serve public", "start": "npx serve public"},
+  "engines": {"node": ">=18"}
+}

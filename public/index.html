@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>StreamForge — MPD Inspector</title>
+  <style>
+    :root { --bg:#071426; --panel:#0d2038; --panel2:#112a46; --text:#eef7ff; --muted:#9cb6cf; --accent:#43b9ff; --accent2:#7ad6ff; --good:#45d29a; --bad:#ff6f8f; --line:#204361; }
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(circle at 20% 0%,#123a61 0,transparent 35%),linear-gradient(160deg,#06111f,#081a2f);color:var(--text)}
+    .wrap{max-width:980px;margin:0 auto;padding:54px 20px}.hero{display:flex;gap:18px;align-items:center;margin-bottom:28px}.logo{width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#2d6dff);display:grid;place-items:center;font-weight:900;font-size:22px;box-shadow:0 12px 35px #0d6fa966}.hero h1{margin:0;font-size:32px;letter-spacing:-.6px}.hero p{margin:6px 0 0;color:var(--muted)}
+    .card{background:linear-gradient(180deg,#0d223aee,#09192bec);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 20px 60px #00000042}.label{font-size:13px;color:var(--muted);margin-bottom:8px}.row{display:flex;gap:12px}.input{flex:1;background:#061322;border:1px solid #295174;color:var(--text);border-radius:14px;padding:15px 16px;font-size:15px;outline:none}.input:focus{border-color:var(--accent)}button{border:0;border-radius:14px;padding:0 20px;background:linear-gradient(135deg,var(--accent),#3f83ff);color:#06111d;font-weight:800;cursor:pointer;min-height:50px}button:disabled{opacity:.55;cursor:not-allowed}.hint{margin:10px 0 0;color:var(--muted);font-size:12px}.status{margin-top:18px;display:none;padding:16px;border-radius:14px;border:1px solid var(--line);background:#071626}.status.show{display:block}.status.good{border-color:#2a6b58}.status.bad{border-color:#703449}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}.stat{background:#0a1a2c;border:1px solid #1c3c58;border-radius:14px;padding:15px}.stat span{display:block;color:var(--muted);font-size:11px}.stat strong{display:block;margin-top:5px;font-size:16px}.footer{margin-top:18px;color:#7f9bb7;font-size:12px;line-height:1.6}.pill{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}.pill.good{background:#0b392c;color:#6ff0bd}.pill.bad{background:#401727;color:#ff91a8}.pill.neutral{background:#17304a;color:#b9d5ee}
+    @media(max-width:720px){.row{flex-direction:column}button{min-height:48px}.grid{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero"><div class="logo">SF</div><div><h1>StreamForge</h1><p>MPD inspector for legitimate, non-DRM media workflows.</p></div></section>
+    <section class="card">
+      <div class="label">MPEG-DASH MPD URL</div>
+      <div class="row"><input id="url" class="input" placeholder="https://example.com/video/manifest.mpd" autocomplete="off"><button id="inspect">Inspect MPD</button></div>
+      <div class="hint">This version does not bypass, extract, or decrypt DRM.</div>
+      <div id="status" class="status"></div>
+      <div id="stats" class="grid" style="display:none"></div>
+      <div class="footer">A Vercel deployment is not suitable for long-running FFmpeg jobs. For non-DRM conversion, use the included local FFmpeg converter; for protected content, use the provider’s authorized export/download mechanism.</div>
+    </section>
+  </main>
+<script>
+const $ = id => document.getElementById(id);
+$('inspect').addEventListener('click', async () => {
+  const url = $('url').value.trim(); const btn = $('inspect'); const status = $('status'); const stats = $('stats');
+  stats.style.display='none'; status.className='status show'; status.textContent='Inspecting manifest…'; btn.disabled=true;
+  try {
+    const r = await fetch('/api/inspect', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url})});
+    const data = await r.json(); if (!r.ok) throw new Error(data.error || 'Inspection failed');
+    const drm = data.drm.protected;
+    status.className = 'status show ' + (drm ? 'bad' : 'good');
+    status.innerHTML = drm ? `<span class="pill bad">DRM detected</span><div style="margin-top:10px">Protected-content markers: ${data.drm.indicators.join(', ')}</div>` : `<span class="pill good">No common DRM markers detected</span><div style="margin-top:10px">This does not guarantee that the media is unrestricted.</div>`;
+    stats.innerHTML = `<div class="stat"><span>Video tracks</span><strong>${data.videoTracks}</strong></div><div class="stat"><span>Audio tracks</span><strong>${data.audioTracks}</strong></div><div class="stat"><span>Manifest</span><strong>${data.dynamic?'Dynamic':'Static'}</strong></div><div class="stat"><span>MPD size</span><strong>${Math.round(data.bytes/1024)} KB</strong></div>`;
+    stats.style.display='grid';
+  } catch(e) { status.className='status show bad'; status.innerHTML=`<span class="pill bad">Error</span><div style="margin-top:10px">${e.message}</div>`; }
+  finally { btn.disabled=false; }
+});
+</script>
+</body></html>
